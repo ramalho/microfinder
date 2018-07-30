@@ -1,31 +1,62 @@
-from index import parse_line, add_entry	
+import unicodedata
+import pytest
 
-def test_parse_line():
-	line = "0024;DOLLAR SIGN;Sc;0;ET;;;;;N;;;;;"
+from index import add_entry, index
+from index import app as index_app
 
-	char, name = parse_line(line)
-
-	assert char == "$"
-	assert name == "DOLLAR SIGN"
 
 def test_single_entry():
-	entries = {}
-	char, name = "$", "DOLLAR SIGN"
+    entries = {}
+    char, name = "$", "DOLLAR SIGN"
 
-	add_entry(entries, char, name)
+    add_entry(entries, char, name)
 
-	assert "DOLLAR" in entries
-	assert "SIGN" in entries
-	assert entries["DOLLAR"] == ["$"]
-	assert entries["SIGN"] == ["$"]
+    assert "DOLLAR" in entries
+    assert "SIGN" in entries
+    assert entries["DOLLAR"] == ["$"]
+    assert entries["SIGN"] == ["$"]
+
 
 def test_multiple_entries():
-	entries = {}
-	data = [("$", "DOLLAR SIGN"), ("%", "PERCENT SIGN")]
+    """
+    This test covers the following entries from UnicodeData.txt:
 
-	for char, name in data:
-		add_entry(entries, char, name)
+    002D;HYPHEN-MINUS;Pd;0;ES;;;;;N;;;;;
+    002E;FULL STOP;Po;0;CS;;;;;N;PERIOD;;;;
+    002F;SOLIDUS;Po;0;CS;;;;;N;SLASH;;;;
+    0030;DIGIT ZERO;Nd;0;EN;;0;0;0;N;;;;;
+    0031;DIGIT ONE;Nd;0;EN;;1;1;1;N;;;;;
+    0032;DIGIT TWO;Nd;0;EN;;2;2;2;N;;;;;
+    """
 
-	assert entries["PERCENT"] == ["%"]
-	assert entries["SIGN"] == ["$", "%"]
-	
+    entries = {}
+    data = []
+    for code in range(0x2d, 0x33):
+        char = chr(code)
+        data.append((char, unicodedata.name(char)))
+
+    for char, name in data:
+        add_entry(entries, char, name)
+
+    assert entries["DIGIT"] == ["0", "1", "2"]
+    assert entries["SOLIDUS"] == ["/"]
+
+
+def test_index():
+    entries = index()
+    assert entries["REGISTERED"] == ["®"]
+    assert len(entries["LETTER"]) > 9000
+    assert " " in entries["SPACE"]
+    assert "🐱" in entries["CAT"]
+
+
+@pytest.fixture
+def client():
+    return index_app.test_client()
+
+
+@pytest.mark.asyncio
+async def test_root(client):
+    resp = await client.get("/")
+    want = b"This is the microfinder index API server"
+    assert await resp.get_data() == want
