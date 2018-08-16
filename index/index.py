@@ -1,6 +1,6 @@
 
 import sys, unicodedata
-from quart import Quart
+from quart import Quart, jsonify, abort
 
 
 def add_entry(index, char, name):
@@ -21,12 +21,23 @@ def index():
     return entries
 
 
+word_index = index()
 app = Quart(__name__)
 
 
 @app.route("/")
-async def hello():
+async def root():
     return "This is the microfinder index API server"
+
+
+@app.route("/<query>")
+async def query(query):
+    try:
+        res = word_index[query.upper()]
+    except KeyError:
+        abort(404)
+    else:
+        return jsonify(res)
 
 
 if __name__ == "__main__":

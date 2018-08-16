@@ -1,8 +1,8 @@
 import unicodedata
 import pytest
 
-from index import add_entry, index
-from index import app as index_app
+from index.index import add_entry, index
+from index.index import app as index_app
 
 
 def test_single_entry():
@@ -60,3 +60,23 @@ async def test_root(client):
     resp = await client.get("/")
     want = b"This is the microfinder index API server"
     assert await resp.get_data() == want
+
+
+@pytest.mark.asyncio
+async def test_query(client):
+    resp = await client.get("/registered")
+    want = ["®"]
+    assert await resp.get_json() == want
+
+
+@pytest.mark.asyncio
+async def test_multiple_query(client):
+    resp = await client.get("/chess")
+    assert len(await resp.get_json()) == 12
+
+
+@pytest.mark.asyncio
+async def test_query_no_match(client):
+    resp = await client.get("/NO_SUCH_CHARACTER")
+    want_code = 404
+    assert resp.status_code == want_code
