@@ -1,6 +1,6 @@
 
 import sys, unicodedata
-import quart
+import flask
 
 def add_entry(index, char, name):
     for word in name.split():
@@ -21,22 +21,22 @@ def index():
 
 
 word_index = index()
-app = quart.Quart(__name__)
+app = flask.Flask(__name__)
 
 
 @app.route("/")
-async def root():
+def root():
     return "This is the microfinder index API server"
 
 
 @app.route("/<query_str>")
-async def query(query_str):
+def query(query_str):
     try:
         res = word_index[query_str.upper()]
     except KeyError:
-        quart.abort(404)
+        flask.abort(404)
     else:
-        return quart.jsonify(res)
+        return flask.jsonify(res)
 
 
 if __name__ == "__main__":

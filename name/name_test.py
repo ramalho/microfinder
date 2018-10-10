@@ -9,9 +9,9 @@ def client():
 
 
 @pytest.mark.asyncio
-async def test_root(client):
+async def test_root_name(client):
     resp = await client.get("/")
-    want = b"This is the microfinder names API server"
+    want = b"This is the microfinder name API server"
     assert await resp.get_data() == want
 
 
